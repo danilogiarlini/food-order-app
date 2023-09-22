@@ -7,8 +7,12 @@ import CartContext from "../../store/cart-context";
 import Checkout from "./Checkout";
 
 const Cart = (props) => {
-  const cartCtx = useContext(CartContext);
   const [openCheckout, setOpenCheckout] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [didSubmit, setDidSubmit] = useState(false);
+  const [showError, setShowError] = useState(false);
+
+  const cartCtx = useContext(CartContext);
 
   const totalAmount = `$${cartCtx.totalAmount.toFixed(2)}`;
   const hasItems = cartCtx.items.length > 0;
@@ -23,6 +27,36 @@ const Cart = (props) => {
 
   const checkoutHandler = () => {
     setOpenCheckout(true);
+  };
+
+  const submitOrderHandler = async (userData) => {
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(
+        "https://food-order-app-d39ba-default-rtdb.firebaseio.com/orders.json",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            user: userData,
+            orderedItems: cartCtx.items,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setDidSubmit(true);
+      }
+
+      if (!response.ok) {
+        setShowError(true);
+      }
+    } catch (error) {
+      console.error("POST request failed!", error);
+      setShowError(true);
+    }
+
+    setIsSubmitting(false);
+    cartCtx.clearCart()
   };
 
   const cartItems = (
@@ -50,18 +84,46 @@ const Cart = (props) => {
           Order
         </button>
       )}
-    </div> 
+    </div>
   );
 
-  return (
-    <Modal onClose={props.onClose}>
+  const cartModalContent = (
+    <>
       {cartItems}
       <div className={classes.total}>
         <span>Total Amount</span>
         <span>{totalAmount}</span>
       </div>
-      {openCheckout && <Checkout onCancel={props.onClose}/>}
+      {openCheckout && (
+        <Checkout onConfirm={submitOrderHandler} onCancel={props.onClose} />
+      )}
       {!openCheckout && modalActions}
+    </>
+  );
+
+  const errorModalContent = (
+    <p className={classes.error}>Something went wrong! Please, try again.</p>
+  );
+
+  const isSubmittingModalContent = <p>Sending order data...</p>;
+
+  const didSubmitModalContent = (
+    <>
+      <p>Your order has been sent successfully!</p>
+      <div className={classes.actions}>
+        <button className={classes.button} onClick={props.onClose}>
+          Close
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <Modal onClose={props.onClose}>
+      {showError && errorModalContent}
+      {!isSubmitting && !didSubmit && cartModalContent}
+      {isSubmitting && isSubmittingModalContent}
+      {!isSubmitting && didSubmit && didSubmitModalContent}
     </Modal>
   );
 };

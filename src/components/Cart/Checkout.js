@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import classes from "./Checkout.module.css";
 
-const isEmpty = (value) => value.trim() !== "";
+const isEmpty = (value) => value.trim() === "";
 const isFiveDigits = (value) => value.trim().length === 5;
 
 
@@ -47,7 +47,16 @@ const Checkout = (props) => {
     if (!formIsValid) {
       return;
     }
+
+    props.onConfirm({
+      name: enteredName,
+      street: enteredStreet,
+      postalCode: enteredPostalcode,
+      city: enteredCity
+    })
   };
+
+
 
   const nameControlClasses = `${classes.control} ${formInputsValidity.name ? '' : classes.invalid}`
   const streetControlClasses = `${classes.control} ${formInputsValidity.street ? '' : classes.invalid}`
